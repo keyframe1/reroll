@@ -85,7 +85,6 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
 ) {
   const groupRef = useRef<THREE.Group>(null);
   const edgesRef = useRef<ComponentRef<typeof Edges>>(null);
-  const fillMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const faceEulers = useMemo(() => computeFaceEulers(), []);
   const stateRef = useRef({
     rolling: false,
@@ -195,8 +194,6 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
       spawnParticles(clockT, useGoldParticles);
 
       const edgesMat = edgesRef.current?.material;
-      const fillMat = fillMatRef.current;
-
       if (edgesMat) {
         gsap.killTweensOf(edgesMat.color);
         // Black -> gold over 0.2s
@@ -212,22 +209,6 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
           r: INK_RGB.r,
           g: INK_RGB.g,
           b: INK_RGB.b,
-          duration: 0.4,
-          delay: 2.5,
-          ease: "power2.inOut",
-        });
-      }
-
-      if (fillMat) {
-        gsap.killTweensOf(fillMat);
-        // Emissive intensity 0 -> 0.3 over 0.3s
-        gsap.to(fillMat, {
-          emissiveIntensity: 0.3,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-        gsap.to(fillMat, {
-          emissiveIntensity: 0,
           duration: 0.4,
           delay: 2.5,
           ease: "power2.inOut",
@@ -361,20 +342,10 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
       <group ref={groupRef} scale={BASE_SCALE}>
         <mesh>
           <icosahedronGeometry args={[1, 0]} />
-          <meshStandardMaterial
-            ref={fillMatRef}
-            color={INK_COLOR}
-            transparent
-            opacity={0.04}
-            depthWrite={false}
-            emissive={GOLD_COLOR}
-            emissiveIntensity={0}
-            roughness={1}
-            metalness={0}
-          />
+          <meshBasicMaterial color="#ffffff" />
           <Edges
             ref={edgesRef}
-            threshold={15}
+            threshold={1}
             color={INK_COLOR}
             lineWidth={2.5}
           />
@@ -476,8 +447,9 @@ export default function Dice3DCanvas() {
           camera={{ position: CAMERA_POS, fov: 50 }}
           style={{ background: "transparent" }}
         >
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[-3, 5, 3]} intensity={0.7} />
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[-3, 4, 5]} intensity={0.8} />
+          <directionalLight position={[2, -1, 3]} intensity={0.3} />
           <D20
             ref={d20Ref}
             onRollStart={handleRollStart}

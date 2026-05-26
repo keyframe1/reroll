@@ -32,13 +32,13 @@ export default function Nav() {
       <div className="max-w-[1080px] mx-auto px-8 py-5 flex items-center">
         <a href="#" className="inline-flex items-center" aria-label="Reroll Gaming">
           <Image
-            src="/reroll-logo.png"
+            src="/header.png"
             alt="Reroll Gaming"
-            width={400}
-            height={240}
+            width={964}
+            height={270}
             priority
             style={{
-              height: "48px",
+              height: "72px",
               width: "auto",
               mixBlendMode: "multiply",
             }}

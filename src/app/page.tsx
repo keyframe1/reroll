@@ -13,13 +13,13 @@ export default function Home() {
           <DiceHero />
         </div>
         <Image
-          src="/reroll-logo.png"
+          src="/rerollbig.png"
           alt="Reroll Gaming"
-          width={400}
-          height={240}
+          width={699}
+          height={298}
           priority
           style={{
-            width: "280px",
+            width: "min(420px, 80vw)",
             height: "auto",
             mixBlendMode: "multiply",
           }}

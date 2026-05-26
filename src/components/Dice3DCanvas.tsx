@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
+import { Edges } from "@react-three/drei";
 import {
   forwardRef,
   useCallback,
@@ -9,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentRef,
 } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
@@ -82,7 +84,8 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
   ref,
 ) {
   const groupRef = useRef<THREE.Group>(null);
-  const wireframeMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const edgesRef = useRef<ComponentRef<typeof Edges>>(null);
+  const fillMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const faceEulers = useMemo(() => computeFaceEulers(), []);
   const stateRef = useRef({
     rolling: false,
@@ -191,54 +194,59 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
 
       spawnParticles(clockT, useGoldParticles);
 
-      const mat = wireframeMatRef.current;
-      if (!mat) return;
-      gsap.killTweensOf(mat.color);
-      gsap.killTweensOf(mat);
+      const edgesMat = edgesRef.current?.material;
+      const fillMat = fillMatRef.current;
 
-      // Black -> gold over 0.2s
-      gsap.to(mat.color, {
-        r: GOLD_RGB.r,
-        g: GOLD_RGB.g,
-        b: GOLD_RGB.b,
-        duration: 0.2,
-        ease: "power2.out",
-      });
-      // Emissive intensity 0 -> 0.3 over 0.3s
-      gsap.to(mat, {
-        emissiveIntensity: 0.3,
-        duration: 0.3,
-        ease: "power2.out",
-      });
-      // Hold 2.5s, then transition back over 0.4s
-      gsap.to(mat.color, {
-        r: INK_RGB.r,
-        g: INK_RGB.g,
-        b: INK_RGB.b,
-        duration: 0.4,
-        delay: 2.5,
-        ease: "power2.inOut",
-      });
-      gsap.to(mat, {
-        emissiveIntensity: 0,
-        duration: 0.4,
-        delay: 2.5,
-        ease: "power2.inOut",
-      });
+      if (edgesMat) {
+        gsap.killTweensOf(edgesMat.color);
+        // Black -> gold over 0.2s
+        gsap.to(edgesMat.color, {
+          r: GOLD_RGB.r,
+          g: GOLD_RGB.g,
+          b: GOLD_RGB.b,
+          duration: 0.2,
+          ease: "power2.out",
+        });
+        // Hold 2.5s, then transition back over 0.4s
+        gsap.to(edgesMat.color, {
+          r: INK_RGB.r,
+          g: INK_RGB.g,
+          b: INK_RGB.b,
+          duration: 0.4,
+          delay: 2.5,
+          ease: "power2.inOut",
+        });
+      }
+
+      if (fillMat) {
+        gsap.killTweensOf(fillMat);
+        // Emissive intensity 0 -> 0.3 over 0.3s
+        gsap.to(fillMat, {
+          emissiveIntensity: 0.3,
+          duration: 0.3,
+          ease: "power2.out",
+        });
+        gsap.to(fillMat, {
+          emissiveIntensity: 0,
+          duration: 0.4,
+          delay: 2.5,
+          ease: "power2.inOut",
+        });
+      }
     },
     [spawnParticles],
   );
 
   const triggerNat1 = useCallback(() => {
-    const mat = wireframeMatRef.current;
-    if (mat) {
-      gsap.killTweensOf(mat.color);
+    const edgesMat = edgesRef.current?.material;
+    if (edgesMat) {
+      gsap.killTweensOf(edgesMat.color);
       // Two red flickers over 0.2s
       const tl = gsap.timeline();
-      tl.call(() => mat.color.set(RED_COLOR), [], 0);
-      tl.call(() => mat.color.set(INK_COLOR), [], 0.05);
-      tl.call(() => mat.color.set(RED_COLOR), [], 0.1);
-      tl.call(() => mat.color.set(INK_COLOR), [], 0.15);
+      tl.call(() => edgesMat.color.set(RED_COLOR), [], 0);
+      tl.call(() => edgesMat.color.set(INK_COLOR), [], 0.05);
+      tl.call(() => edgesMat.color.set(RED_COLOR), [], 0.1);
+      tl.call(() => edgesMat.color.set(INK_COLOR), [], 0.15);
     }
 
     const g = groupRef.current;
@@ -354,22 +362,21 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         <mesh>
           <icosahedronGeometry args={[1, 0]} />
           <meshStandardMaterial
-            ref={wireframeMatRef}
+            ref={fillMatRef}
             color={INK_COLOR}
-            wireframe
+            transparent
+            opacity={0.04}
+            depthWrite={false}
             emissive={GOLD_COLOR}
             emissiveIntensity={0}
             roughness={1}
             metalness={0}
           />
-        </mesh>
-        <mesh scale={0.99}>
-          <icosahedronGeometry args={[1, 0]} />
-          <meshStandardMaterial
+          <Edges
+            ref={edgesRef}
+            threshold={15}
             color={INK_COLOR}
-            transparent
-            opacity={0.04}
-            depthWrite={false}
+            lineWidth={2.5}
           />
         </mesh>
       </group>

@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #c0392b;
+  --accent-glow: rgba(192, 57, 43, .12);
+  --bg: #f5f3ee;
+  --ink: #1a1a18;
+  --mid: #666660;
+  --light: #aaa8a0;
+  --faint: #ddd8cc;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Separator */
+.sep {
+  height: 1px;
+  background: var(--faint);
+  max-width: 960px;
+  margin: 0 auto;
+  border: none;
+}

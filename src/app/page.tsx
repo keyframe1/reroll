@@ -1,5 +1,6 @@
 import Nav from "@/components/Nav";
-import Dice from "@/components/Dice";
+import DiceHero from "@/components/DiceHero";
+import FooterRollButton from "@/components/FooterRollButton";
 import Reveal from "@/components/Reveal";
 
 const events = [
@@ -35,96 +36,280 @@ const hours = [
   ["Thursday", "12 PM – 9 PM"], ["Friday", "12 PM – 11 PM"], ["Saturday", "10 AM – 11 PM"], ["Sunday", "12 PM – 8 PM"],
 ];
 
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <span
+      className="inline-block font-mono uppercase text-accent border-l border-accent pl-2"
+      style={{ fontSize: "0.75rem", letterSpacing: "0.15em" }}
+    >
+      {children}
+    </span>
+  );
+}
+
 export default function Home() {
   return (
     <>
       <Nav />
-      <section className="min-h-[90vh] flex flex-col justify-center items-center text-center pt-28 pb-20 px-6">
-        <Dice />
-        <h1 className="font-black text-5xl tracking-[.14em] uppercase">REROLL</h1>
-        <p className="text-lg tracking-[.35em] text-[var(--mid)] uppercase mt-0.5">Gaming</p>
-        <p className="text-base font-light text-[var(--mid)] max-w-sm mt-5 leading-relaxed">
-          Trading card games, organized play, and community.<br />Marrero, Louisiana. Open 7 days.
+
+      <section className="min-h-[90vh] flex flex-col justify-center items-center text-center pt-32 pb-24 px-6">
+        <div className="mb-8 w-full flex justify-center">
+          <DiceHero />
+        </div>
+        <h1
+          className="font-black text-4xl sm:text-5xl uppercase"
+          style={{ letterSpacing: "0.14em" }}
+        >
+          REROLL
+        </h1>
+        <p
+          className="text-base sm:text-lg text-mid uppercase mt-1"
+          style={{ letterSpacing: "0.35em" }}
+        >
+          Gaming
+        </p>
+        <p className="text-sm sm:text-base font-light text-mid max-w-sm mt-6 leading-relaxed">
+          Trading card games, organized play, and community.
+          <br />
+          Marrero, Louisiana. Open 7 days.
         </p>
       </section>
-      <hr className="sep" />
-      <section id="events" className="max-w-[960px] mx-auto px-6 py-20">
-        <Reveal><span className="block font-mono text-[10px] tracking-[.22em] uppercase text-[var(--accent)] mb-4">Weekly Events</span></Reveal>
-        <Reveal delay={0.1}><h2 className="text-3xl font-bold tracking-tight mb-2">Something fires every night.</h2></Reveal>
-        <Reveal delay={0.2}><p className="text-sm font-light text-[var(--mid)] max-w-md mb-10">$5 entry for constructed events. Pokémon League is always free.</p></Reveal>
-        <div>{events.map((ev, i) => (
-          <Reveal key={i} delay={0.15 + i * 0.05}>
-            <div className="grid grid-cols-[100px_1fr_auto] gap-4 items-baseline py-3.5 border-b border-[var(--faint)] first:border-t hover:bg-[rgba(192,57,43,.02)] hover:pl-2 hover:pr-2 transition-all duration-200">
-              <span className="font-mono text-xs tracking-[.1em] uppercase text-[var(--accent)]">{ev.day}</span>
-              <span className="font-medium">{ev.name}</span>
-              <span className="font-mono text-xs text-[var(--light)] text-right">{ev.time}</span>
-            </div>
+
+      <section
+        id="events"
+        className="border-t border-ink/10 px-6 py-24 md:py-32"
+      >
+        <div className="max-w-[720px] mx-auto">
+          <Reveal delay={0}>
+            <SectionLabel>Weekly Events</SectionLabel>
           </Reveal>
-        ))}</div>
-      </section>
-      <hr className="sep" />
-      <section className="max-w-[960px] mx-auto px-6 py-20">
-        <Reveal><span className="block font-mono text-[10px] tracking-[.22em] uppercase text-[var(--accent)] mb-4">We Carry</span></Reveal>
-        <Reveal delay={0.1}><h2 className="text-3xl font-bold tracking-tight mb-2">All the games.</h2></Reveal>
-        <Reveal delay={0.2}><p className="text-sm font-light text-[var(--mid)] max-w-md mb-10">Sealed product, singles, accessories, and sleeves for every major TCG.</p></Reveal>
-        <Reveal delay={0.3}><div className="flex flex-wrap gap-2">{formats.map((f) => (
-          <span key={f} className="px-5 py-2.5 border border-[var(--faint)] font-mono text-[13px] text-[var(--mid)] cursor-default transition-all duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[rgba(192,57,43,.04)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(192,57,43,.08)]">{f}</span>
-        ))}</div></Reveal>
-      </section>
-      <hr className="sep" />
-      <section id="services" className="max-w-[960px] mx-auto px-6 py-20">
-        <Reveal><span className="block font-mono text-[10px] tracking-[.22em] uppercase text-[var(--accent)] mb-4">Services</span></Reveal>
-        <Reveal delay={0.1}><h2 className="text-3xl font-bold tracking-tight mb-10">More than a card shop.</h2></Reveal>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{services.map((s, i) => (
-          <Reveal key={s.title} delay={0.15 + i * 0.1}>
-            <div className="border-t-2 border-[var(--ink)] pt-4 hover:border-[var(--accent)] transition-colors duration-300">
-              <h3 className="font-bold text-sm uppercase tracking-[.05em] mb-2.5">{s.title}</h3>
-              <p className="text-sm font-light text-[var(--mid)] leading-relaxed">{s.desc}</p>
-            </div>
+          <Reveal delay={0.08}>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-5 mb-3">
+              Something fires every night.
+            </h2>
           </Reveal>
-        ))}</div>
-      </section>
-      <hr className="sep" />
-      <section id="membership" className="max-w-[960px] mx-auto px-6 py-20">
-        <Reveal><span className="block font-mono text-[10px] tracking-[.22em] uppercase text-[var(--accent)] mb-4">Membership</span></Reveal>
-        <Reveal delay={0.1}><h2 className="text-3xl font-bold tracking-tight mb-2">Priority access.</h2></Reveal>
-        <Reveal delay={0.2}><p className="text-sm font-light text-[var(--mid)] max-w-md mb-10">Members get first dibs on allocated product, reserved pre-release seats, and early access to collection buy-ins.</p></Reveal>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{tiers.map((t, i) => (
-          <Reveal key={t.name} delay={0.15 + i * 0.1}>
-            <div className="border border-[var(--faint)] p-7 hover:border-[var(--accent)] hover:shadow-[0_8px_32px_rgba(192,57,43,.06)] hover:-translate-y-0.5 transition-all duration-300">
-              <span className="block font-bold text-[13px] uppercase tracking-[.08em]">{t.name}</span>
-              <span className="block font-bold text-3xl text-[var(--accent)] mt-3.5 mb-2">{t.price}{t.sub && <small className="text-[13px] font-light text-[var(--light)]">{t.sub}</small>}</span>
-              <ul className="mt-4 space-y-0.5">{t.perks.map((p) => (
-                <li key={p} className="text-[13px] font-light text-[var(--mid)] before:content-['·'] before:mr-2 before:text-[var(--accent)]">{p}</li>
-              ))}</ul>
-            </div>
+          <Reveal delay={0.16}>
+            <p className="text-sm text-mid leading-relaxed max-w-md">
+              $5 entry for constructed events. Pokémon League is always free.
+            </p>
           </Reveal>
-        ))}</div>
-      </section>
-      <hr className="sep" />
-      <section id="location" className="max-w-[960px] mx-auto px-6 py-20">
-        <Reveal><span className="block font-mono text-[10px] tracking-[.22em] uppercase text-[var(--accent)] mb-4">Visit</span></Reveal>
-        <Reveal delay={0.1}><h2 className="text-3xl font-bold tracking-tight mb-10">Come play.</h2></Reveal>
-        <Reveal delay={0.2}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-              <h3 className="font-bold text-lg mb-3">Reroll Gaming</h3>
-              <p className="text-sm font-light text-[var(--mid)] mb-4">Marrero, LA 70072</p>
-              <div className="flex gap-4 mt-4">
-                <a href="https://discord.gg/" target="_blank" rel="noopener" className="font-mono text-xs text-[var(--accent)] underline underline-offset-2 hover:text-[var(--ink)] transition-colors">Discord</a>
-                <a href="https://www.facebook.com/" target="_blank" rel="noopener" className="font-mono text-xs text-[var(--accent)] underline underline-offset-2 hover:text-[var(--ink)] transition-colors">Facebook</a>
-              </div>
-            </div>
-            <table className="w-full"><tbody>{hours.map(([day, time]) => (
-              <tr key={day} className="border-b border-[var(--faint)]">
-                <td className="py-2 text-sm font-medium w-28">{day}</td>
-                <td className="py-2 text-sm font-light text-[var(--mid)]">{time}</td>
-              </tr>
-            ))}</tbody></table>
+          <div className="mt-12 border-t border-ink/10">
+            {events.map((ev, i) => (
+              <Reveal key={i} delay={0.24 + i * 0.08}>
+                <div className="grid grid-cols-[64px_1fr] sm:grid-cols-[110px_1fr_auto] gap-x-4 gap-y-1 py-4 px-3 border-b border-ink/5 hover:bg-ink/[0.03] transition-colors duration-200">
+                  <span
+                    className="font-mono uppercase text-accent tracking-widest self-baseline"
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    {ev.day}
+                  </span>
+                  <span className="text-sm sm:text-base font-medium self-baseline">
+                    {ev.name}
+                  </span>
+                  <span
+                    className="font-mono text-light col-start-2 sm:col-start-auto text-left sm:text-right self-baseline"
+                    style={{ fontSize: "0.75rem" }}
+                  >
+                    {ev.time}
+                  </span>
+                </div>
+              </Reveal>
+            ))}
           </div>
-        </Reveal>
+        </div>
       </section>
-      <footer className="text-center py-12 font-mono text-[11px] text-[var(--light)] border-t border-[var(--faint)] tracking-wide">Reroll Gaming · Marrero, Louisiana</footer>
+
+      <section className="border-t border-ink/10 px-6 py-24 md:py-32">
+        <div className="max-w-[720px] mx-auto">
+          <Reveal delay={0}>
+            <SectionLabel>We Carry</SectionLabel>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-5 mb-3">
+              All the games.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <p className="text-sm text-mid leading-relaxed max-w-md">
+              Sealed product, singles, accessories, and sleeves for every major TCG.
+            </p>
+          </Reveal>
+          <div className="mt-10 flex flex-wrap gap-2">
+            {formats.map((f, i) => (
+              <Reveal key={f} delay={0.24 + i * 0.05}>
+                <span
+                  className="inline-flex items-center rounded-full border border-ink/10 font-mono text-mid cursor-default transition-all duration-200 hover:border-accent hover:text-accent hover:bg-accent/5 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(192,57,43,0.08)]"
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "4px 14px",
+                  }}
+                >
+                  {f}
+                </span>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="services"
+        className="border-t border-ink/10 px-6 py-24 md:py-32"
+      >
+        <div className="max-w-[720px] mx-auto">
+          <Reveal delay={0}>
+            <SectionLabel>Services</SectionLabel>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-5 mb-10">
+              More than a card shop.
+            </h2>
+          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
+            {services.map((s, i) => (
+              <Reveal key={s.title} delay={0.16 + i * 0.08}>
+                <div className="border-t-2 border-ink pt-4 hover:border-accent transition-colors duration-300 h-full">
+                  <h3
+                    className="font-bold uppercase mb-3"
+                    style={{ fontSize: "0.875rem", letterSpacing: "0.05em" }}
+                  >
+                    {s.title}
+                  </h3>
+                  <p className="text-sm font-light text-mid leading-relaxed">
+                    {s.desc}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="membership"
+        className="border-t border-ink/10 px-6 py-24 md:py-32"
+      >
+        <div className="max-w-[720px] mx-auto">
+          <Reveal delay={0}>
+            <SectionLabel>Membership</SectionLabel>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-5 mb-3">
+              Priority access.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <p className="text-sm text-mid leading-relaxed max-w-md">
+              Members get first dibs on allocated product, reserved pre-release seats, and early access to collection buy-ins.
+            </p>
+          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
+            {tiers.map((t, i) => (
+              <Reveal key={t.name} delay={0.24 + i * 0.08}>
+                <div className="border border-ink/10 p-8 transition-all duration-300 hover:border-accent hover:-translate-y-[2px] hover:shadow-[0_12px_32px_rgba(192,57,43,0.08)] h-full">
+                  <h3
+                    className="font-mono uppercase mb-5"
+                    style={{ fontSize: "1.25rem", letterSpacing: "0.1em" }}
+                  >
+                    {t.name}
+                  </h3>
+                  <div className="mb-6 flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-accent">
+                      {t.price}
+                    </span>
+                    {t.sub && (
+                      <span className="text-xs font-light text-light">
+                        {t.sub}
+                      </span>
+                    )}
+                  </div>
+                  <ul className="space-y-2.5">
+                    {t.perks.map((p) => (
+                      <li
+                        key={p}
+                        className="text-sm font-light text-mid flex items-baseline gap-2 leading-snug"
+                      >
+                        <span className="text-accent leading-none flex-shrink-0">·</span>
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="location"
+        className="border-t border-ink/10 px-6 py-24 md:py-32"
+      >
+        <div className="max-w-[720px] mx-auto">
+          <Reveal delay={0}>
+            <SectionLabel>Visit</SectionLabel>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-5 mb-10">
+              Come play.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 mt-2">
+              <div>
+                <h3 className="font-bold text-lg tracking-tight mb-3">
+                  Reroll Gaming
+                </h3>
+                <p className="text-sm font-light text-mid mb-5">
+                  Marrero, LA 70072
+                </p>
+                <div className="flex gap-4 mt-4">
+                  <a
+                    href="https://discord.gg/"
+                    target="_blank"
+                    rel="noopener"
+                    className="font-mono text-xs text-accent underline underline-offset-4 hover:text-ink transition-colors"
+                  >
+                    Discord
+                  </a>
+                  <a
+                    href="https://www.facebook.com/"
+                    target="_blank"
+                    rel="noopener"
+                    className="font-mono text-xs text-accent underline underline-offset-4 hover:text-ink transition-colors"
+                  >
+                    Facebook
+                  </a>
+                </div>
+              </div>
+              <table className="w-full">
+                <tbody>
+                  {hours.map(([day, time]) => (
+                    <tr key={day} className="border-b border-ink/10 last:border-b-0">
+                      <td className="py-2.5 text-sm font-medium w-28">{day}</td>
+                      <td className="py-2.5 text-sm font-light text-mid">
+                        {time}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <footer className="border-t border-ink/10 pt-20 pb-14 px-6">
+        <div className="max-w-[720px] mx-auto flex flex-col items-center gap-4">
+          <FooterRollButton />
+          <p
+            className="font-mono text-light tracking-wide text-center"
+            style={{ fontSize: "0.7rem", letterSpacing: "0.1em" }}
+          >
+            Reroll Gaming · Marrero, Louisiana
+          </p>
+        </div>
+      </footer>
     </>
   );
 }

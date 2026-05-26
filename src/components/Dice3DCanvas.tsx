@@ -14,14 +14,36 @@ import * as THREE from "three";
 import gsap from "gsap";
 
 const INK_COLOR = "#2d2a26";
-const ACCENT_COLOR = "#c0392b";
+const GOLD_COLOR = "#D4AF37";
+const RED_COLOR = "#8B0000";
 const BASE_SCALE = 1.5;
 const CAMERA_POS: [number, number, number] = [0, 2, 5];
+const PARTICLE_COUNT = 36;
+const PARTICLE_LIFETIME = 1.2;
+const PARTICLE_GRAVITY = 4;
+const INK_RGB = new THREE.Color(INK_COLOR);
+const GOLD_RGB = new THREE.Color(GOLD_COLOR);
 
 type D20Handle = {
   roll: () => void;
   finishRoll: () => void;
 };
+
+type Particle = {
+  active: boolean;
+  velocity: THREE.Vector3;
+  rotationSpeed: THREE.Vector3;
+  spawnTime: number;
+};
+
+function makeParticle(): Particle {
+  return {
+    active: false,
+    velocity: new THREE.Vector3(),
+    rotationSpeed: new THREE.Vector3(),
+    spawnTime: 0,
+  };
+}
 
 function computeFaceEulers(): THREE.Euler[] {
   const geom = new THREE.IcosahedronGeometry(1, 0);
@@ -60,7 +82,7 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
   ref,
 ) {
   const groupRef = useRef<THREE.Group>(null);
-  const pointLightRef = useRef<THREE.PointLight>(null);
+  const wireframeMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const faceEulers = useMemo(() => computeFaceEulers(), []);
   const stateRef = useRef({
     rolling: false,
@@ -70,6 +92,46 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
     baseZ: 0,
     idleStartT: 0,
   });
+  const nat20CountRef = useRef(0);
+  const particlesRef = useRef<Particle[]>(
+    Array.from({ length: PARTICLE_COUNT }, makeParticle),
+  );
+  const particleMeshRefs = useRef<Array<THREE.Mesh | null>>(
+    Array(PARTICLE_COUNT).fill(null),
+  );
+
+  const spawnParticles = useCallback(
+    (clockT: number, gold: boolean) => {
+      const color = gold ? GOLD_COLOR : INK_COLOR;
+      particlesRef.current.forEach((p, i) => {
+        const mesh = particleMeshRefs.current[i];
+        if (!mesh) return;
+        const speed = 2.5 + Math.random() * 3.5;
+        const phi = Math.random() * Math.PI * 2;
+        const theta = Math.acos(2 * Math.random() - 1);
+        p.velocity.set(
+          Math.sin(theta) * Math.cos(phi) * speed,
+          Math.cos(theta) * speed,
+          Math.sin(theta) * Math.sin(phi) * speed,
+        );
+        p.rotationSpeed.set(
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10,
+        );
+        p.spawnTime = clockT;
+        p.active = true;
+
+        mesh.position.set(0, 0, 0);
+        mesh.rotation.set(0, 0, 0);
+        mesh.visible = true;
+        const mat = mesh.material as THREE.MeshBasicMaterial;
+        mat.color.set(color);
+        mat.opacity = 1;
+      });
+    },
+    [],
+  );
 
   useFrame((state, delta) => {
     const g = groupRef.current;
@@ -83,19 +145,114 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
       stateRef.current.needsResetBase = false;
     }
 
-    if (stateRef.current.rolling) return;
+    if (!stateRef.current.rolling) {
+      stateRef.current.baseY += 0.3 * delta;
+      const t = state.clock.elapsedTime - stateRef.current.idleStartT;
+      g.rotation.y = stateRef.current.baseY;
+      g.rotation.x =
+        stateRef.current.baseX +
+        Math.sin(t * (Math.PI / 2)) * ((5 * Math.PI) / 180);
+      g.rotation.z = stateRef.current.baseZ;
+      g.position.x = 0;
+      g.position.y = Math.sin(t * ((2 * Math.PI) / 3)) * 0.1;
+    }
 
-    stateRef.current.baseY += 0.3 * delta;
-    const t = state.clock.elapsedTime - stateRef.current.idleStartT;
+    // Particle update — runs whether rolling or not
+    particlesRef.current.forEach((p, i) => {
+      if (!p.active) return;
+      const mesh = particleMeshRefs.current[i];
+      if (!mesh) return;
 
-    g.rotation.y = stateRef.current.baseY;
-    g.rotation.x =
-      stateRef.current.baseX +
-      Math.sin(t * (Math.PI / 2)) * ((5 * Math.PI) / 180);
-    g.rotation.z = stateRef.current.baseZ;
-    g.position.x = 0;
-    g.position.y = Math.sin(t * ((2 * Math.PI) / 3)) * 0.1;
+      const elapsed = state.clock.elapsedTime - p.spawnTime;
+      if (elapsed >= PARTICLE_LIFETIME) {
+        p.active = false;
+        mesh.visible = false;
+        return;
+      }
+
+      mesh.position.x += p.velocity.x * delta;
+      mesh.position.y += p.velocity.y * delta;
+      mesh.position.z += p.velocity.z * delta;
+      p.velocity.y -= PARTICLE_GRAVITY * delta;
+
+      mesh.rotation.x += p.rotationSpeed.x * delta;
+      mesh.rotation.y += p.rotationSpeed.y * delta;
+      mesh.rotation.z += p.rotationSpeed.z * delta;
+
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, 1 - elapsed / PARTICLE_LIFETIME);
+    });
   });
+
+  const triggerNat20 = useCallback(
+    (clockT: number) => {
+      nat20CountRef.current += 1;
+      const useGoldParticles = nat20CountRef.current === 3;
+
+      spawnParticles(clockT, useGoldParticles);
+
+      const mat = wireframeMatRef.current;
+      if (!mat) return;
+      gsap.killTweensOf(mat.color);
+      gsap.killTweensOf(mat);
+
+      // Black -> gold over 0.2s
+      gsap.to(mat.color, {
+        r: GOLD_RGB.r,
+        g: GOLD_RGB.g,
+        b: GOLD_RGB.b,
+        duration: 0.2,
+        ease: "power2.out",
+      });
+      // Emissive intensity 0 -> 0.3 over 0.3s
+      gsap.to(mat, {
+        emissiveIntensity: 0.3,
+        duration: 0.3,
+        ease: "power2.out",
+      });
+      // Hold 2.5s, then transition back over 0.4s
+      gsap.to(mat.color, {
+        r: INK_RGB.r,
+        g: INK_RGB.g,
+        b: INK_RGB.b,
+        duration: 0.4,
+        delay: 2.5,
+        ease: "power2.inOut",
+      });
+      gsap.to(mat, {
+        emissiveIntensity: 0,
+        duration: 0.4,
+        delay: 2.5,
+        ease: "power2.inOut",
+      });
+    },
+    [spawnParticles],
+  );
+
+  const triggerNat1 = useCallback(() => {
+    const mat = wireframeMatRef.current;
+    if (mat) {
+      gsap.killTweensOf(mat.color);
+      // Two red flickers over 0.2s
+      const tl = gsap.timeline();
+      tl.call(() => mat.color.set(RED_COLOR), [], 0);
+      tl.call(() => mat.color.set(INK_COLOR), [], 0.05);
+      tl.call(() => mat.color.set(RED_COLOR), [], 0.1);
+      tl.call(() => mat.color.set(INK_COLOR), [], 0.15);
+    }
+
+    const g = groupRef.current;
+    if (g) {
+      const startY = g.position.y;
+      gsap.to(g.position, {
+        y: startY - 0.15,
+        duration: 0.125,
+        ease: "power2.inOut",
+        yoyo: true,
+        repeat: 1,
+      });
+    }
+  }, []);
 
   const startRoll = useCallback(() => {
     const g = groupRef.current;
@@ -120,25 +277,13 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
 
     const tl = gsap.timeline({
       onComplete: () => {
-        if (num === 1) {
-          const shakeT = gsap.timeline();
-          const segDur = 0.2 / 6;
-          for (let i = 0; i < 6; i++) {
-            const x = (i % 2 === 0 ? 1 : -1) * 0.05;
-            const y = (Math.random() - 0.5) * 0.05;
-            shakeT.to(g.position, { x, y, duration: segDur });
-          }
-          shakeT.to(g.position, { x: 0, y: 0, duration: 0.02 });
-        }
-        if (num === 20 && pointLightRef.current) {
-          const pl = pointLightRef.current;
-          gsap.to(pl, { intensity: 2, duration: 0.2, ease: "power2.out" });
-          gsap.to(pl, {
-            intensity: 0,
-            duration: 0.2,
-            delay: 0.2,
-            ease: "power2.in",
-          });
+        if (num === 20) {
+          // clockT pulled from a Three-managed clock via the mesh — fall back to
+          // performance.now() if needed. Using performance.now/1000 keeps
+          // spawnTime in same units as state.clock.elapsedTime is monotonic.
+          triggerNat20(performance.now() / 1000);
+        } else if (num === 1) {
+          triggerNat1();
         }
         onRollLanded(num);
       },
@@ -190,7 +335,7 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
       },
       0.95,
     );
-  }, [faceEulers, onRollStart, onRollLanded]);
+  }, [faceEulers, onRollStart, onRollLanded, triggerNat20, triggerNat1]);
 
   const finishRoll = useCallback(() => {
     stateRef.current.rolling = false;
@@ -208,7 +353,15 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
       <group ref={groupRef} scale={BASE_SCALE}>
         <mesh>
           <icosahedronGeometry args={[1, 0]} />
-          <meshBasicMaterial color={INK_COLOR} wireframe />
+          <meshStandardMaterial
+            ref={wireframeMatRef}
+            color={INK_COLOR}
+            wireframe
+            emissive={GOLD_COLOR}
+            emissiveIntensity={0}
+            roughness={1}
+            metalness={0}
+          />
         </mesh>
         <mesh scale={0.99}>
           <icosahedronGeometry args={[1, 0]} />
@@ -220,13 +373,24 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
           />
         </mesh>
       </group>
-      <pointLight
-        ref={pointLightRef}
-        position={[0, 0, 0]}
-        color={ACCENT_COLOR}
-        intensity={0}
-        distance={6}
-      />
+
+      {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
+        <mesh
+          key={`particle-${i}`}
+          ref={(el) => {
+            particleMeshRefs.current[i] = el;
+          }}
+          visible={false}
+        >
+          <icosahedronGeometry args={[0.08, 0]} />
+          <meshBasicMaterial
+            color={INK_COLOR}
+            wireframe
+            transparent
+            opacity={1}
+          />
+        </mesh>
+      ))}
     </>
   );
 });
@@ -234,7 +398,6 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
 export default function Dice3DCanvas() {
   const d20Ref = useRef<D20Handle>(null);
   const resultRef = useRef<HTMLSpanElement>(null);
-  const nat20CountRef = useRef(0);
   const [hintVisible, setHintVisible] = useState(true);
   const [rolling, setRolling] = useState(false);
 
@@ -255,18 +418,6 @@ export default function Dice3DCanvas() {
       return;
     }
     el.textContent = String(num);
-    el.style.textShadow =
-      num === 20 ? "0 0 30px var(--color-accent, var(--accent))" : "none";
-
-    if (num === 20) {
-      nat20CountRef.current += 1;
-      if (nat20CountRef.current === 3) {
-        document.body.classList.add("nat20-flash");
-        window.setTimeout(() => {
-          document.body.classList.remove("nat20-flash");
-        }, 200);
-      }
-    }
 
     const peakOpacity = num === 1 ? 0.4 : 1;
 
@@ -342,7 +493,7 @@ export default function Dice3DCanvas() {
             style={{
               fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
               fontSize: "2.5rem",
-              color: "var(--color-accent, var(--accent))",
+              color: INK_COLOR,
               opacity: 0,
               display: "inline-block",
             }}

@@ -40,14 +40,6 @@ html { scroll-behavior: smooth; }
   border: none;
 }
 
-@keyframes nat20-flash {
-  0%, 100% { background-color: var(--color-bg); }
-  45%      { background-color: var(--color-accent); }
-}
-.nat20-flash {
-  animation: nat20-flash 0.15s ease-out;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

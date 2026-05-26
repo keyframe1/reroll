@@ -12,14 +12,14 @@ export default function FooterRollButton() {
       type="button"
       aria-label="Scroll to top and roll the dice"
       onClick={handleClick}
-      className="group inline-flex items-center justify-center cursor-pointer text-light hover:text-accent transition-colors duration-300 align-middle"
+      className="group inline-flex items-center justify-center cursor-pointer text-ink/70 hover:text-accent transition-colors duration-300 my-8"
     >
       <svg
-        width="24"
-        height="24"
+        width="48"
+        height="48"
         viewBox="0 0 32 32"
         fill="none"
-        className="transition-transform duration-[600ms] ease-out group-hover:rotate-[360deg]"
+        className="transition-transform duration-[800ms] ease-out group-hover:rotate-[360deg]"
       >
         <polygon
           points="16,2 30,9 30,23 16,30 2,23 2,9"

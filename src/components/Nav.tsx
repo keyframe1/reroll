@@ -29,7 +29,7 @@ export default function Nav() {
           : "bg-transparent backdrop-blur-0 border-transparent"
       }`}
     >
-      <div className="max-w-[1080px] mx-auto px-6 py-4 flex items-center">
+      <div className="max-w-[1080px] mx-auto px-8 py-5 flex items-center">
         <a href="#" className="inline-flex items-center" aria-label="Reroll Gaming">
           <Image
             src="/reroll-logo.png"
@@ -38,7 +38,7 @@ export default function Nav() {
             height={240}
             priority
             style={{
-              height: "36px",
+              height: "48px",
               width: "auto",
               mixBlendMode: "multiply",
             }}

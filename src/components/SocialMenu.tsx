@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 
 const DISCORD_URL = "https://discord.gg/3BsXNP77u";
@@ -235,26 +236,19 @@ export default function SocialMenu() {
           zIndex: 1,
         }}
       >
-        {/* Same geometry as the static-wireframe fallback used by the hero die,
-            so the footer d20 reads as the same icosahedron projection (the
-            two horizontal lines through the middle of the hexagon are the
-            edges this used to be missing). */}
-        <svg width="48" height="48" viewBox="0 0 200 200" fill="none">
-          <polygon
-            points="100,10 190,55 190,145 100,190 10,145 10,55"
-            stroke="currentColor"
-            strokeWidth="6"
-          />
-          <line x1="100" y1="10" x2="100" y2="190" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="10" y1="55" x2="190" y2="145" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="190" y1="55" x2="10" y2="145" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="100" y1="10" x2="10" y2="145" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="100" y1="10" x2="190" y2="145" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="10" y1="55" x2="100" y2="190" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="190" y1="55" x2="100" y2="190" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="10" y1="55" x2="190" y2="55" stroke="currentColor" strokeWidth="2.5" />
-          <line x1="10" y1="145" x2="190" y2="145" stroke="currentColor" strokeWidth="2.5" />
-        </svg>
+        <Image
+          src="/dice.png"
+          alt=""
+          width={448}
+          height={400}
+          aria-hidden="true"
+          style={{
+            width: 48,
+            height: 48,
+            objectFit: "contain",
+            mixBlendMode: "multiply",
+          }}
+        />
       </button>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   forwardRef,
   useCallback,
@@ -11,15 +11,15 @@ import {
   useState,
 } from "react";
 import * as THREE from "three";
-import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
-import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import gsap from "gsap";
 
 const INK_COLOR = "#2d2a26";
 const GOLD_COLOR = "#D4AF37";
 const RED_COLOR = "#8B0000";
 const BASE_SCALE = 1.5;
+const TUBE_RADIUS = 0.025;
+const TUBE_RADIAL_SEGMENTS = 6;
 const CAMERA_POS: [number, number, number] = [0, 2, 5];
 const PARTICLE_COUNT = 36;
 const PARTICLE_LIFETIME = 1.2;
@@ -85,50 +85,55 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
   ref,
 ) {
   const groupRef = useRef<THREE.Group>(null);
-  const edgeMaterialRef = useRef<LineMaterial | null>(null);
+  const edgeMaterialRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const faceEulers = useMemo(() => computeFaceEulers(), []);
 
-  // Build a Line2-based wireframe so linewidth stays exactly 2.5px regardless
-  // of camera angle, depth, or DPR. Constructed once; cleaned up on unmount.
-  const edgeLines = useMemo(() => {
+  // Build edges as actual 3D tubes (one cylinder per icosahedron edge, merged
+  // into a single draw call). Thickness is geometric, so it doesn't flicker
+  // with camera angle, depth, DPR, or GPU. Constructed once on mount.
+  const edgeMesh = useMemo(() => {
     const baseGeom = new THREE.IcosahedronGeometry(1, 0);
     const edgesGeom = new THREE.EdgesGeometry(baseGeom, 1);
-    const positions = Array.from(
-      edgesGeom.attributes.position.array as Float32Array,
-    );
+    const pos = edgesGeom.attributes.position;
 
-    const segGeom = new LineSegmentsGeometry();
-    segGeom.setPositions(positions);
+    const tubes: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < pos.count; i += 2) {
+      const start = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+      const end = new THREE.Vector3(
+        pos.getX(i + 1),
+        pos.getY(i + 1),
+        pos.getZ(i + 1),
+      );
+      const curve = new THREE.LineCurve3(start, end);
+      tubes.push(
+        new THREE.TubeGeometry(curve, 1, TUBE_RADIUS, TUBE_RADIAL_SEGMENTS, false),
+      );
+    }
 
-    const mat = new LineMaterial({
-      color: new THREE.Color(INK_COLOR).getHex(),
-      linewidth: 2.5,
-      resolution: new THREE.Vector2(1, 1),
-      dashed: false,
+    const merged = mergeGeometries(tubes);
+    baseGeom.dispose();
+    edgesGeom.dispose();
+    tubes.forEach((t) => t.dispose());
+
+    if (!merged) {
+      // Shouldn't happen — all tubes share identical attribute layout.
+      throw new Error("Failed to merge tube geometries for d20 edges");
+    }
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(INK_COLOR),
     });
     edgeMaterialRef.current = mat;
 
-    const segs = new LineSegments2(segGeom, mat);
-    segs.computeLineDistances();
-
-    baseGeom.dispose();
-    edgesGeom.dispose();
-
-    return segs;
+    return new THREE.Mesh(merged, mat);
   }, []);
-
-  const { size } = useThree();
-  useEffect(() => {
-    const mat = edgeMaterialRef.current;
-    if (mat) mat.resolution.set(size.width, size.height);
-  }, [size.width, size.height]);
 
   useEffect(() => {
     return () => {
-      edgeLines.geometry.dispose();
-      (edgeLines.material as LineMaterial).dispose();
+      edgeMesh.geometry.dispose();
+      (edgeMesh.material as THREE.MeshBasicMaterial).dispose();
     };
-  }, [edgeLines]);
+  }, [edgeMesh]);
   const stateRef = useRef({
     rolling: false,
     needsResetBase: false,
@@ -387,7 +392,7 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
           <icosahedronGeometry args={[1, 0]} />
           <meshBasicMaterial color="#ffffff" />
         </mesh>
-        <primitive object={edgeLines} />
+        <primitive object={edgeMesh} />
       </group>
 
       {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (

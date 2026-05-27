@@ -24,8 +24,8 @@ export default function Home() {
             mixBlendMode: "multiply",
           }}
         />
-        <p className="text-sm sm:text-base font-light text-mid max-w-sm mt-6 leading-relaxed">
-          Trading card games and community. Marrero, Louisiana.
+        <p className="text-sm sm:text-base font-medium text-mid max-w-sm mt-6 leading-relaxed">
+          Trading card games and community.
         </p>
       </section>
 

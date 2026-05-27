@@ -96,7 +96,9 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
     const edgesGeom = new THREE.EdgesGeometry(baseGeom, 1);
     const pos = edgesGeom.attributes.position;
 
-    const tubes: THREE.BufferGeometry[] = [];
+    const parts: THREE.BufferGeometry[] = [];
+    const seenVerts = new Set<string>();
+
     for (let i = 0; i < pos.count; i += 2) {
       const start = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
       const end = new THREE.Vector3(
@@ -105,19 +107,45 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         pos.getZ(i + 1),
       );
       const curve = new THREE.LineCurve3(start, end);
-      tubes.push(
+      parts.push(
         new THREE.TubeGeometry(curve, 1, TUBE_RADIUS, TUBE_RADIAL_SEGMENTS, false),
       );
+
+      // Triangular pyramid caps at each unique vertex: fill the gaps where
+      // the tubes' hexagonal open ends meet, and give the vertex a slight
+      // outward point. Cone with 3 radial segments = tetrahedron, apex
+      // pointing along the vertex direction (outward from icosahedron center).
+      for (const v of [start, end]) {
+        const key = `${v.x.toFixed(4)},${v.y.toFixed(4)},${v.z.toFixed(4)}`;
+        if (!seenVerts.has(key)) {
+          seenVerts.add(key);
+          const dir = v.clone().normalize();
+          const h = TUBE_RADIUS * 1.5;
+          const cap = new THREE.ConeGeometry(TUBE_RADIUS, h, 3);
+          // Cone defaults to centered at origin with +Y apex.
+          // Shift up so base is at origin → rotate so apex tracks `dir` →
+          // translate to the vertex so the base sits exactly at it.
+          cap.translate(0, h * 0.5, 0);
+          cap.applyQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              dir,
+            ),
+          );
+          cap.translate(v.x, v.y, v.z);
+          parts.push(cap);
+        }
+      }
     }
 
-    const merged = mergeGeometries(tubes);
+    const merged = mergeGeometries(parts);
     baseGeom.dispose();
     edgesGeom.dispose();
-    tubes.forEach((t) => t.dispose());
+    parts.forEach((g) => g.dispose());
 
     if (!merged) {
       // Shouldn't happen — all tubes share identical attribute layout.
-      throw new Error("Failed to merge tube geometries for d20 edges");
+      throw new Error("Failed to merge edge geometries for d20 wireframe");
     }
 
     const mat = new THREE.MeshBasicMaterial({

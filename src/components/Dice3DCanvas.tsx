@@ -449,6 +449,78 @@ export default function Dice3DCanvas() {
   const resultRef = useRef<HTMLSpanElement>(null);
   const [rolling, setRolling] = useState(false);
 
+  // Roll-stats easter egg — all tracking state lives in refs so rolls
+  // don't trigger re-renders. The only state toggle is the panel
+  // visibility on roll #23.
+  const rollsRef = useRef<number[]>([]);
+  const [statsVisible, setStatsVisible] = useState(false);
+  const totalRef = useRef<HTMLSpanElement>(null);
+  const critsRef = useRef<HTMLSpanElement>(null);
+  const fumblesRef = useRef<HTMLSpanElement>(null);
+  const avgRef = useRef<HTMLSpanElement>(null);
+  const streakRef = useRef<HTMLSpanElement>(null);
+  const favoriteRef = useRef<HTMLSpanElement>(null);
+  const barRefs = useRef<Array<HTMLDivElement | null>>(
+    new Array(20).fill(null),
+  );
+
+  const updateStats = useCallback(() => {
+    const rolls = rollsRef.current;
+    if (rolls.length === 0) return;
+
+    let crits = 0;
+    let fumbles = 0;
+    let sum = 0;
+    const counts = new Array(21).fill(0) as number[];
+    for (const r of rolls) {
+      if (r === 20) crits++;
+      if (r === 1) fumbles++;
+      sum += r;
+      counts[r]++;
+    }
+
+    let currentStreak = 0;
+    let maxStreak = 0;
+    for (const r of rolls) {
+      if (r >= 11) {
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+      } else {
+        currentStreak = 0;
+      }
+    }
+
+    let max = 0;
+    let fav = 1;
+    for (let i = 1; i <= 20; i++) {
+      if (counts[i] > max) {
+        max = counts[i];
+        fav = i;
+      }
+    }
+
+    if (totalRef.current) totalRef.current.textContent = String(rolls.length);
+    if (critsRef.current) critsRef.current.textContent = String(crits);
+    if (fumblesRef.current) fumblesRef.current.textContent = String(fumbles);
+    if (avgRef.current) avgRef.current.textContent = (sum / rolls.length).toFixed(1);
+    if (streakRef.current) streakRef.current.textContent = String(maxStreak);
+    if (favoriteRef.current) favoriteRef.current.textContent = String(fav);
+
+    for (let i = 0; i < 20; i++) {
+      const el = barRefs.current[i];
+      if (!el) continue;
+      const n = i + 1;
+      const count = counts[n];
+      const height = max > 0 ? (count / max) * 30 : 0;
+      el.style.height = `${height}px`;
+      el.style.opacity = n === fav ? "1" : "0.3";
+    }
+  }, []);
+
+  useEffect(() => {
+    if (statsVisible) updateStats();
+  }, [statsVisible, updateStats]);
+
   const triggerRoll = useCallback(() => {
     d20Ref.current?.roll();
   }, []);
@@ -457,41 +529,48 @@ export default function Dice3DCanvas() {
     setRolling(true);
   }, []);
 
-  const handleRollLanded = useCallback((num: number) => {
-    const el = resultRef.current;
-    if (!el) {
-      d20Ref.current?.finishRoll();
-      setRolling(false);
-      return;
-    }
-    el.textContent = String(num);
+  const handleRollLanded = useCallback(
+    (num: number) => {
+      rollsRef.current.push(num);
+      if (rollsRef.current.length === 23) setStatsVisible(true);
+      updateStats();
 
-    const peakOpacity = num === 1 ? 0.4 : 1;
-
-    gsap.killTweensOf(el);
-    const tl = gsap.timeline({
-      onComplete: () => {
+      const el = resultRef.current;
+      if (!el) {
         d20Ref.current?.finishRoll();
         setRolling(false);
-      },
-    });
-    tl.fromTo(
-      el,
-      { scale: 0, opacity: 0, y: 0 },
-      {
-        scale: 1.1,
-        opacity: peakOpacity,
-        duration: 0.25,
-        ease: "power2.out",
-      },
-    );
-    tl.to(el, { scale: 1.0, duration: 0.15, ease: "power2.in" });
-    tl.to(
-      el,
-      { y: -30, opacity: 0, duration: 0.5, ease: "power2.out" },
-      "+=2",
-    );
-  }, []);
+        return;
+      }
+      el.textContent = String(num);
+
+      const peakOpacity = num === 1 ? 0.4 : 1;
+
+      gsap.killTweensOf(el);
+      const tl = gsap.timeline({
+        onComplete: () => {
+          d20Ref.current?.finishRoll();
+          setRolling(false);
+        },
+      });
+      tl.fromTo(
+        el,
+        { scale: 0, opacity: 0, y: 0 },
+        {
+          scale: 1.1,
+          opacity: peakOpacity,
+          duration: 0.25,
+          ease: "power2.out",
+        },
+      );
+      tl.to(el, { scale: 1.0, duration: 0.15, ease: "power2.in" });
+      tl.to(
+        el,
+        { y: -30, opacity: 0, duration: 0.5, ease: "power2.out" },
+        "+=2",
+      );
+    },
+    [updateStats],
+  );
 
   useEffect(() => {
     const handler = () => triggerRoll();
@@ -546,6 +625,120 @@ export default function Dice3DCanvas() {
           />
         </div>
       </div>
+
+      {statsVisible && (
+        <div
+          role="region"
+          aria-label="Roll statistics"
+          className="font-mono"
+          style={{
+            position: "fixed",
+            bottom: "16px",
+            right: "16px",
+            zIndex: 40,
+            background: "#ffffff",
+            border: "1px solid rgba(45, 42, 38, 0.15)",
+            borderRadius: "8px",
+            padding: "1.5rem",
+            maxWidth: "220px",
+            width: "calc(100vw - 32px)",
+            color: INK_COLOR,
+            animation: "statsSlideUp 0.4s ease-out",
+            boxSizing: "border-box",
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Close roll statistics"
+            onClick={() => setStatsVisible(false)}
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              padding: "4px 6px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              lineHeight: 1,
+              color: INK_COLOR,
+              opacity: 0.4,
+              transition: "opacity 0.2s ease-out",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.4")}
+          >
+            ×
+          </button>
+
+          <div
+            style={{
+              fontSize: "0.65rem",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              marginBottom: "1rem",
+            }}
+          >
+            Roll Log
+          </div>
+
+          {(
+            [
+              ["rolls", totalRef, "0"],
+              ["crits", critsRef, "0"],
+              ["fumbles", fumblesRef, "0"],
+              ["avg", avgRef, "0.0"],
+              ["hot streak", streakRef, "0"],
+              ["favorite", favoriteRef, "—"],
+            ] as const
+          ).map(([label, valueRef, initial]) => (
+            <div
+              key={label}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: "6px",
+              }}
+            >
+              <span style={{ fontSize: "0.7rem", opacity: 0.55 }}>{label}</span>
+              <span
+                ref={valueRef}
+                style={{ fontSize: "0.85rem", fontWeight: 600 }}
+              >
+                {initial}
+              </span>
+            </div>
+          ))}
+
+          <div
+            aria-hidden="true"
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              gap: "2px",
+              height: "30px",
+              marginTop: "1rem",
+            }}
+          >
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={i}
+                ref={(el) => {
+                  barRefs.current[i] = el;
+                }}
+                style={{
+                  width: "6px",
+                  height: "0px",
+                  background: INK_COLOR,
+                  opacity: 0.3,
+                  transition: "height 0.3s ease-out, opacity 0.3s ease-out",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -40,6 +40,11 @@ html { scroll-behavior: smooth; }
   border: none;
 }
 
+@keyframes statsSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

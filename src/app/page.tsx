@@ -9,7 +9,7 @@ export default function Home() {
       <Nav />
 
       <section className="min-h-[90vh] flex flex-col justify-center items-center text-center pt-32 pb-24 px-6">
-        <div className="mb-8 w-full flex justify-center">
+        <div className="mb-2 w-full flex justify-center">
           <DiceHero />
         </div>
         <Image

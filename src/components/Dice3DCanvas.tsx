@@ -1,7 +1,6 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Edges } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   forwardRef,
   useCallback,
@@ -10,9 +9,11 @@ import {
   useMemo,
   useRef,
   useState,
-  type ComponentRef,
 } from "react";
 import * as THREE from "three";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
+import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
 import gsap from "gsap";
 
 const INK_COLOR = "#2d2a26";
@@ -84,8 +85,50 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
   ref,
 ) {
   const groupRef = useRef<THREE.Group>(null);
-  const edgesRef = useRef<ComponentRef<typeof Edges>>(null);
+  const edgeMaterialRef = useRef<LineMaterial | null>(null);
   const faceEulers = useMemo(() => computeFaceEulers(), []);
+
+  // Build a Line2-based wireframe so linewidth stays exactly 2.5px regardless
+  // of camera angle, depth, or DPR. Constructed once; cleaned up on unmount.
+  const edgeLines = useMemo(() => {
+    const baseGeom = new THREE.IcosahedronGeometry(1, 0);
+    const edgesGeom = new THREE.EdgesGeometry(baseGeom, 1);
+    const positions = Array.from(
+      edgesGeom.attributes.position.array as Float32Array,
+    );
+
+    const segGeom = new LineSegmentsGeometry();
+    segGeom.setPositions(positions);
+
+    const mat = new LineMaterial({
+      color: new THREE.Color(INK_COLOR).getHex(),
+      linewidth: 2.5,
+      resolution: new THREE.Vector2(1, 1),
+      dashed: false,
+    });
+    edgeMaterialRef.current = mat;
+
+    const segs = new LineSegments2(segGeom, mat);
+    segs.computeLineDistances();
+
+    baseGeom.dispose();
+    edgesGeom.dispose();
+
+    return segs;
+  }, []);
+
+  const { size } = useThree();
+  useEffect(() => {
+    const mat = edgeMaterialRef.current;
+    if (mat) mat.resolution.set(size.width, size.height);
+  }, [size.width, size.height]);
+
+  useEffect(() => {
+    return () => {
+      edgeLines.geometry.dispose();
+      (edgeLines.material as LineMaterial).dispose();
+    };
+  }, [edgeLines]);
   const stateRef = useRef({
     rolling: false,
     needsResetBase: false,
@@ -193,7 +236,7 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
 
       spawnParticles(clockT, useGoldParticles);
 
-      const edgesMat = edgesRef.current?.material;
+      const edgesMat = edgeMaterialRef.current;
       if (edgesMat) {
         gsap.killTweensOf(edgesMat.color);
         // Black -> gold over 0.2s
@@ -219,7 +262,7 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
   );
 
   const triggerNat1 = useCallback(() => {
-    const edgesMat = edgesRef.current?.material;
+    const edgesMat = edgeMaterialRef.current;
     if (edgesMat) {
       gsap.killTweensOf(edgesMat.color);
       // Two red flickers over 0.2s
@@ -343,13 +386,8 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         <mesh>
           <icosahedronGeometry args={[1, 0]} />
           <meshBasicMaterial color="#ffffff" />
-          <Edges
-            ref={edgesRef}
-            threshold={1}
-            color={INK_COLOR}
-            lineWidth={2.5}
-          />
         </mesh>
+        <primitive object={edgeLines} />
       </group>
 
       {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
@@ -376,7 +414,6 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
 export default function Dice3DCanvas() {
   const d20Ref = useRef<D20Handle>(null);
   const resultRef = useRef<HTMLSpanElement>(null);
-  const [hintVisible, setHintVisible] = useState(true);
   const [rolling, setRolling] = useState(false);
 
   const triggerRoll = useCallback(() => {
@@ -384,7 +421,6 @@ export default function Dice3DCanvas() {
   }, []);
 
   const handleRollStart = useCallback(() => {
-    setHintVisible(false);
     setRolling(true);
   }, []);
 
@@ -438,18 +474,16 @@ export default function Dice3DCanvas() {
           position: "relative",
           width: "100%",
           maxWidth: "500px",
-          height: "clamp(300px, 50vw, 400px)",
+          height: "clamp(240px, 40vw, 340px)",
           cursor: rolling ? "grabbing" : "pointer",
         }}
       >
         <Canvas
+          flat
           gl={{ alpha: true, antialias: true }}
           camera={{ position: CAMERA_POS, fov: 50 }}
           style={{ background: "transparent" }}
         >
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[-3, 4, 5]} intensity={0.8} />
-          <directionalLight position={[2, -1, 3]} intensity={0.3} />
           <D20
             ref={d20Ref}
             onRollStart={handleRollStart}
@@ -479,16 +513,6 @@ export default function Dice3DCanvas() {
           />
         </div>
       </div>
-      <p
-        className="font-mono mt-3 transition-opacity duration-500"
-        style={{
-          fontSize: "0.7rem",
-          opacity: hintVisible ? 0.4 : 0,
-          letterSpacing: "0.1em",
-        }}
-      >
-        Click the die
-      </p>
     </div>
   );
 }

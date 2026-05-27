@@ -280,14 +280,16 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
           duration: 0.2,
           ease: "power2.out",
         });
-        // Hold 2.5s, then transition back over 0.4s
+        // Fade back to ink in lockstep with the number's scale-dissolve exit
+        // (number starts exit at entry+hold = 2.0s, exit takes 0.7s; matching
+        // delay + duration + ease so the edges and the number leave together).
         gsap.to(edgesMat.color, {
           r: INK_RGB.r,
           g: INK_RGB.g,
           b: INK_RGB.b,
-          duration: 0.4,
-          delay: 2.5,
-          ease: "power2.inOut",
+          duration: 0.7,
+          delay: 2.0,
+          ease: "power2.in",
         });
       }
     },
@@ -354,13 +356,15 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
       },
     });
 
+    // Roll mechanics scaled to 0.85× the previous timing — same shape,
+    // less dead air between click and result.
     tl.to(
       g.scale,
       {
         x: BASE_SCALE * 0.85,
         y: BASE_SCALE * 0.85,
         z: BASE_SCALE * 0.85,
-        duration: 0.15,
+        duration: 0.13,
         ease: "power2.in",
       },
       0,
@@ -372,10 +376,10 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         x: tumbleX,
         y: tumbleY,
         z: tumbleZ,
-        duration: 0.8,
+        duration: 0.68,
         ease: "power2.out",
       },
-      0.15,
+      0.13,
     );
     tl.to(
       g.scale,
@@ -383,10 +387,10 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         x: BASE_SCALE,
         y: BASE_SCALE,
         z: BASE_SCALE,
-        duration: 0.8,
+        duration: 0.68,
         ease: "back.out(1.5)",
       },
-      0.15,
+      0.13,
     );
 
     tl.to(
@@ -395,10 +399,10 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         x: finalX,
         y: finalY,
         z: finalZ,
-        duration: 0.3,
+        duration: 0.25,
         ease: "elastic.out(1, 0.4)",
       },
-      0.95,
+      0.81,
     );
   }, [faceEulers, onRollStart, onRollLanded, triggerNat20, triggerNat1]);
 
@@ -545,29 +549,97 @@ export default function Dice3DCanvas() {
 
       const peakOpacity = num === 1 ? 0.4 : 1;
 
+      // Reset every property an exit might have touched so the next entry
+      // doesn't inherit a 0.6 scale, 6px blur, 4px letter-spacing, etc.
       gsap.killTweensOf(el);
+      gsap.set(el, {
+        opacity: 0,
+        scale: 1.3,
+        y: 0,
+        filter: "blur(0px)",
+        letterSpacing: "0px",
+      });
+
+      // Pick the exit shape. Nat 20 / Nat 1 are fixed overrides; everything
+      // else randomly picks one of 4 styles per roll.
+      let exitProps: gsap.TweenVars;
+      if (num === 20) {
+        exitProps = {
+          opacity: 0,
+          scale: 0.6,
+          duration: 0.7,
+          ease: "power2.in",
+        };
+      } else if (num === 1) {
+        exitProps = {
+          opacity: 0,
+          duration: 0.25,
+          ease: "power2.inOut",
+        };
+      } else {
+        const variant = Math.floor(Math.random() * 4);
+        switch (variant) {
+          case 0:
+            // Clean fade in place
+            exitProps = {
+              opacity: 0,
+              duration: 0.5,
+              ease: "power2.inOut",
+            };
+            break;
+          case 1:
+            // Scale dissolve — sinks into the die
+            exitProps = {
+              opacity: 0,
+              scale: 0.85,
+              duration: 0.4,
+              ease: "power2.in",
+            };
+            break;
+          case 2:
+            // Soft blur fade
+            exitProps = {
+              opacity: 0,
+              filter: "blur(6px)",
+              duration: 0.5,
+              ease: "power1.inOut",
+            };
+            break;
+          case 3:
+          default:
+            // Split fade — letter-spacing expansion only for multi-digit
+            exitProps =
+              num >= 10
+                ? {
+                    opacity: 0,
+                    letterSpacing: "4px",
+                    duration: 0.4,
+                    ease: "power2.out",
+                  }
+                : {
+                    opacity: 0,
+                    duration: 0.4,
+                    ease: "power2.out",
+                  };
+            break;
+        }
+      }
+
       const tl = gsap.timeline({
         onComplete: () => {
           d20Ref.current?.finishRoll();
           setRolling(false);
         },
       });
-      tl.fromTo(
-        el,
-        { scale: 0, opacity: 0, y: 0 },
-        {
-          scale: 1.1,
-          opacity: peakOpacity,
-          duration: 0.25,
-          ease: "power2.out",
-        },
-      );
-      tl.to(el, { scale: 1.0, duration: 0.15, ease: "power2.in" });
-      tl.to(
-        el,
-        { y: -30, opacity: 0, duration: 0.5, ease: "power2.out" },
-        "+=2",
-      );
+      // Entry: snap in with slight scale-down, 0.2s
+      tl.to(el, {
+        opacity: peakOpacity,
+        scale: 1,
+        duration: 0.2,
+        ease: "power2.out",
+      });
+      // Hold 1.8s, then run the chosen exit
+      tl.to(el, exitProps, "+=1.8");
     },
     [updateStats],
   );

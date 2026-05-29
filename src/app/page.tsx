@@ -23,21 +23,9 @@ export default function Home() {
       <Nav />
 
       <section className="min-h-[90vh] flex flex-col justify-center items-center text-center pt-32 pb-24 px-6">
-        <div className="mb-2 w-full flex justify-center">
+        <div className="w-full flex justify-center">
           <DiceHero />
         </div>
-        <Image
-          src="/rerollbig.png"
-          alt="Reroll Gaming"
-          width={699}
-          height={298}
-          priority
-          style={{
-            width: "min(420px, 80vw)",
-            height: "auto",
-            mixBlendMode: "multiply",
-          }}
-        />
       </section>
 
       <section id="events" className="border-t border-ink/10 px-6 py-24 md:py-32 scroll-mt-28">
@@ -79,6 +67,20 @@ export default function Home() {
       <SocialSection />
 
       <VisitSection />
+
+      <section className="border-t border-ink/10 px-6 py-16 flex justify-center">
+        <Image
+          src="/rerollbig.png"
+          alt="Reroll Gaming"
+          width={699}
+          height={298}
+          style={{
+            width: "min(220px, 60vw)",
+            height: "auto",
+            mixBlendMode: "multiply",
+          }}
+        />
+      </section>
 
       <footer
         className="border-t border-ink/10 px-6"

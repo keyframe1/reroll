@@ -17,7 +17,7 @@ import gsap from "gsap";
 const INK_COLOR = "#2d2a26";
 const GOLD_COLOR = "#D4AF37";
 const RED_COLOR = "#8B0000";
-const BASE_SCALE = 1.5;
+const BASE_SCALE = 1.72;
 const TUBE_RADIUS = 0.025;
 const TUBE_RADIAL_SEGMENTS = 6;
 const CAMERA_POS: [number, number, number] = [0, 2, 5];
@@ -26,6 +26,40 @@ const PARTICLE_LIFETIME = 1.2;
 const PARTICLE_GRAVITY = 4;
 const INK_RGB = new THREE.Color(INK_COLOR);
 const GOLD_RGB = new THREE.Color(GOLD_COLOR);
+
+// D Twenty's voice. Roll-count milestones fire once at their number; the
+// nat20/nat1 pools override milestones and always fire; from roll 25 onward a
+// random quip can fire (30% chance, handled at the call site).
+const ROLL_MILESTONES: Record<number, string> = {
+  3: "Hey. I'm D.",
+  7: "You can stop now.",
+  10: "My full name is D Twenty, actually.",
+  15: "Are you okay?",
+  20: "I'm getting dizzy.",
+};
+const NAT20_LINES = [
+  "NATURAL TWENTY, BABY.",
+  "You're welcome.",
+  "I was saving that one.",
+  "Tell the bard I said you're welcome.",
+  "Crit happens.",
+];
+const NAT1_LINES = [
+  "...we don't talk about that one.",
+  "That wasn't my fault.",
+  "Fumble. Ouch.",
+  "The dice gods are displeased.",
+  "I meant to do that.",
+];
+const RANDOM_LINES = [
+  "Stop poking me.",
+  "Hey, that's rude.",
+  "I have feelings, you know.",
+  "Roll me one more time. I dare you.",
+  "This is my life now.",
+  "Do I get overtime for this?",
+  "You could at least buy me dice sleeves.",
+];
 
 type D20Handle = {
   roll: () => void;
@@ -453,6 +487,12 @@ export default function Dice3DCanvas() {
   const resultRef = useRef<HTMLSpanElement>(null);
   const [rolling, setRolling] = useState(false);
 
+  // Speech bubble — driven imperatively (GSAP + textContent) so rolls never
+  // re-render. Counters live in refs per the same no-re-render discipline.
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const bubbleTlRef = useRef<gsap.core.Timeline | null>(null);
+  const lastLineRef = useRef<string | null>(null);
+
   // Roll-stats easter egg — all tracking state lives in refs so rolls
   // don't trigger re-renders. The only state toggle is the panel
   // visibility on roll #23.
@@ -525,6 +565,38 @@ export default function Dice3DCanvas() {
     if (statsVisible) updateStats();
   }, [statsVisible, updateStats]);
 
+  // Pick from a pool, avoiding an immediate repeat of the last shown line.
+  const pickFromPool = useCallback((pool: string[]) => {
+    if (pool.length <= 1) return pool[0];
+    let choice = pool[Math.floor(Math.random() * pool.length)];
+    for (let guard = 0; choice === lastLineRef.current && guard < 12; guard++) {
+      choice = pool[Math.floor(Math.random() * pool.length)];
+    }
+    return choice;
+  }, []);
+
+  // Show a bubble: entry (scale up from the tail) → hold 3s → exit (rise +
+  // fade). A new bubble immediately replaces whatever is on screen.
+  const showBubble = useCallback((text: string) => {
+    const el = bubbleRef.current;
+    if (!el) return;
+    bubbleTlRef.current?.kill();
+    gsap.killTweensOf(el);
+    el.textContent = text;
+    lastLineRef.current = text;
+    gsap.set(el, { opacity: 0, scale: 0.7, y: 0 });
+    const tl = gsap.timeline();
+    tl.to(el, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" });
+    tl.to(el, { opacity: 0, y: -8, duration: 0.3, ease: "power2.in" }, "+=3");
+    bubbleTlRef.current = tl;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      bubbleTlRef.current?.kill();
+    };
+  }, []);
+
   const triggerRoll = useCallback(() => {
     d20Ref.current?.roll();
   }, []);
@@ -536,6 +608,20 @@ export default function Dice3DCanvas() {
   const handleRollLanded = useCallback(
     (num: number) => {
       rollsRef.current.push(num);
+
+      // D Twenty reacts. Nat 20 / nat 1 always speak and override milestones;
+      // milestones fire once at their roll number; from roll 25 a random quip
+      // has a 30% chance. Only one bubble shows at a time.
+      const rollCount = rollsRef.current.length;
+      const milestone = ROLL_MILESTONES[rollCount];
+      let line: string | null = null;
+      if (num === 20) line = pickFromPool(NAT20_LINES);
+      else if (num === 1) line = pickFromPool(NAT1_LINES);
+      else if (milestone) line = milestone;
+      else if (rollCount >= 25 && Math.random() < 0.3)
+        line = pickFromPool(RANDOM_LINES);
+      if (line) showBubble(line);
+
       if (rollsRef.current.length === 23) setStatsVisible(true);
       updateStats();
 
@@ -641,7 +727,7 @@ export default function Dice3DCanvas() {
       // Hold 1.8s, then run the chosen exit
       tl.to(el, exitProps, "+=1.8");
     },
-    [updateStats],
+    [updateStats, pickFromPool, showBubble],
   );
 
   useEffect(() => {
@@ -658,7 +744,7 @@ export default function Dice3DCanvas() {
           position: "relative",
           width: "100%",
           maxWidth: "500px",
-          height: "clamp(240px, 40vw, 340px)",
+          height: "clamp(350px, 50vw, 500px)",
           cursor: rolling ? "grabbing" : "pointer",
         }}
       >
@@ -695,6 +781,23 @@ export default function Dice3DCanvas() {
               display: "inline-block",
             }}
           />
+        </div>
+
+        {/* Speech bubble. Outer wrapper owns positioning (centered on the die,
+            nudged slightly right); the inner .speech-bubble is GSAP-animated. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: "82%",
+            transform: "translateX(-50%)",
+            marginLeft: "26px",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        >
+          <div ref={bubbleRef} className="speech-bubble" />
         </div>
       </div>
 

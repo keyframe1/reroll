@@ -33,7 +33,7 @@ const cards: Card[] = [
 
 export default function SocialSection() {
   return (
-    <section id="social" className="border-t border-ink/10 px-6 py-24 md:py-32 scroll-mt-28">
+    <section id="connect" className="border-t border-ink/10 px-6 py-24 md:py-32 scroll-mt-28">
       <div className="max-w-[720px] mx-auto">
         <Reveal delay={0}>
           <SectionLabel>Connect</SectionLabel>

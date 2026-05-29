@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 const navLinks = [
   { label: "Events", href: "#events" },
-  { label: "Social", href: "#social" },
+  { label: "Connect", href: "#connect" },
   { label: "Visit", href: "#visit" },
 ];
 
@@ -31,7 +31,7 @@ export default function Nav() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
         scrolled
-          ? "bg-bg/90 backdrop-blur-[12px] border-ink/10"
+          ? "bg-[#C8C8C8]/85 backdrop-blur-[12px] border-ink/10"
           : "bg-transparent backdrop-blur-0 border-transparent"
       }`}
     >

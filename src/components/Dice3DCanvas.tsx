@@ -172,27 +172,14 @@ const D20 = forwardRef<D20Handle, D20Props>(function D20(
         new THREE.TubeGeometry(curve, 1, TUBE_RADIUS, TUBE_RADIAL_SEGMENTS, false),
       );
 
-      // Triangular pyramid caps at each unique vertex: fill the gaps where
-      // the tubes' hexagonal open ends meet, and give the vertex a slight
-      // outward point. Cone with 3 radial segments = tetrahedron, apex
-      // pointing along the vertex direction (outward from icosahedron center).
+      // Round each unique vertex with a small sphere (radius = tube radius, 8
+      // segments) so the hexagonal tube ends blend into a clean ball instead
+      // of the spiky points the bare tube intersections leave behind.
       for (const v of [start, end]) {
         const key = `${v.x.toFixed(4)},${v.y.toFixed(4)},${v.z.toFixed(4)}`;
         if (!seenVerts.has(key)) {
           seenVerts.add(key);
-          const dir = v.clone().normalize();
-          const h = TUBE_RADIUS * 1.5;
-          const cap = new THREE.ConeGeometry(TUBE_RADIUS, h, 3);
-          // Cone defaults to centered at origin with +Y apex.
-          // Shift up so base is at origin → rotate so apex tracks `dir` →
-          // translate to the vertex so the base sits exactly at it.
-          cap.translate(0, h * 0.5, 0);
-          cap.applyQuaternion(
-            new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              dir,
-            ),
-          );
+          const cap = new THREE.SphereGeometry(TUBE_RADIUS, 8, 8);
           cap.translate(v.x, v.y, v.z);
           parts.push(cap);
         }

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Nav from "@/components/Nav";
 import DiceHero from "@/components/DiceHero";
 import FooterRollButton from "@/components/FooterRollButton";
@@ -67,20 +66,6 @@ export default function Home() {
       <SocialSection />
 
       <VisitSection />
-
-      <section className="border-t border-ink/10 px-6 py-16 flex justify-center">
-        <Image
-          src="/rerollbig.png"
-          alt="Reroll Gaming"
-          width={699}
-          height={298}
-          style={{
-            width: "min(220px, 60vw)",
-            height: "auto",
-            mixBlendMode: "multiply",
-          }}
-        />
-      </section>
 
       <footer
         className="border-t border-ink/10 px-6"

@@ -3,6 +3,12 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+const navLinks = [
+  { label: "Events", href: "#events" },
+  { label: "Social", href: "#social" },
+  { label: "Visit", href: "#visit" },
+];
+
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
 
@@ -29,7 +35,7 @@ export default function Nav() {
           : "bg-transparent backdrop-blur-0 border-transparent"
       }`}
     >
-      <div className="max-w-[1080px] mx-auto px-8 py-5 flex items-center">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between gap-4">
         <a href="#" className="inline-flex items-center" aria-label="Reroll Gaming">
           <Image
             src="/header.png"
@@ -37,13 +43,17 @@ export default function Nav() {
             width={964}
             height={270}
             priority
-            style={{
-              height: "72px",
-              width: "auto",
-              mixBlendMode: "multiply",
-            }}
+            className="h-12 sm:h-[72px] w-auto"
+            style={{ mixBlendMode: "multiply" }}
           />
         </a>
+        <div className="flex items-center gap-x-4 sm:gap-x-8">
+          {navLinks.map((link) => (
+            <a key={link.href} href={link.href} className="nav-link font-mono uppercase">
+              {link.label}
+            </a>
+          ))}
+        </div>
       </div>
     </nav>
   );

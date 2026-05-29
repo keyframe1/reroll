@@ -2,8 +2,10 @@ import Image from "next/image";
 import Nav from "@/components/Nav";
 import DiceHero from "@/components/DiceHero";
 import FooterRollButton from "@/components/FooterRollButton";
-import FooterSocial from "@/components/FooterSocial";
 import Reveal from "@/components/Reveal";
+import SectionLabel from "@/components/SectionLabel";
+import SocialSection from "@/components/SocialSection";
+import VisitSection from "@/components/VisitSection";
 
 const events = [
   { day: "SAT", name: "Commander + Cardfight!! Vanguard", time: "6:00 PM" },
@@ -14,17 +16,6 @@ const events = [
   { day: "THU", name: "Magic Standard", time: "6:00 PM" },
   { day: "FRI", name: "Friday Night Magic", time: "6:00 PM" },
 ];
-
-function SectionLabel({ children }: { children: string }) {
-  return (
-    <span
-      className="inline-block font-mono uppercase text-accent border-l border-accent pl-2"
-      style={{ fontSize: "0.75rem", letterSpacing: "0.15em" }}
-    >
-      {children}
-    </span>
-  );
-}
 
 export default function Home() {
   return (
@@ -49,7 +40,7 @@ export default function Home() {
         />
       </section>
 
-      <section id="events" className="border-t border-ink/10 px-6 py-24 md:py-32">
+      <section id="events" className="border-t border-ink/10 px-6 py-24 md:py-32 scroll-mt-28">
         <div className="max-w-[720px] mx-auto">
           <Reveal delay={0}>
             <SectionLabel>Weekly Events</SectionLabel>
@@ -85,25 +76,26 @@ export default function Home() {
         </div>
       </section>
 
+      <SocialSection />
+
+      <VisitSection />
+
       <footer
         className="border-t border-ink/10 px-6"
         style={{ paddingTop: "3rem", paddingBottom: "3rem" }}
       >
         <div className="max-w-[720px] mx-auto flex flex-col items-center">
           <FooterRollButton />
-          <div style={{ marginTop: "1.5rem" }}>
-            <FooterSocial />
-          </div>
           <p
             className="font-mono text-center"
             style={{
-              fontSize: "0.7rem",
+              fontSize: "0.65rem",
               letterSpacing: "0.1em",
-              opacity: 0.4,
+              opacity: 0.3,
               marginTop: "1rem",
             }}
           >
-            Marrero, Louisiana
+            © 2026 Reroll Gaming
           </p>
         </div>
       </footer>

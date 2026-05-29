@@ -61,6 +61,33 @@ const RANDOM_LINES = [
   "You could at least buy me dice sleeves.",
 ];
 
+// Lifetime roll tracking, persisted per-browser in localStorage. SSR-safe:
+// guarded on `window` and wrapped so private-mode / quota errors never break a
+// roll or the static build.
+const LS_ROLLS = "reroll-total-rolls";
+const LS_NAT20 = "reroll-nat20-total";
+const LS_NAT1 = "reroll-nat1-total";
+
+function readStoredCount(key: string): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(key);
+    const n = raw == null ? 0 : parseInt(raw, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeStoredCount(key: string, value: number): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch {
+    // private mode / quota exceeded — ignore
+  }
+}
+
 type D20Handle = {
   roll: () => void;
   finishRoll: () => void;
@@ -508,6 +535,15 @@ export default function Dice3DCanvas() {
     new Array(20).fill(null),
   );
 
+  // Lifetime totals (localStorage-backed). Counters live in refs; values are
+  // rendered imperatively into the panel like the session stats.
+  const lifetimeRollsRef = useRef(0);
+  const lifetimeCritsRef = useRef(0);
+  const lifetimeFumblesRef = useRef(0);
+  const ltRollsRef = useRef<HTMLSpanElement>(null);
+  const ltCritsRef = useRef<HTMLSpanElement>(null);
+  const ltFumblesRef = useRef<HTMLSpanElement>(null);
+
   const updateStats = useCallback(() => {
     const rolls = rollsRef.current;
     if (rolls.length === 0) return;
@@ -550,6 +586,13 @@ export default function Dice3DCanvas() {
     if (streakRef.current) streakRef.current.textContent = String(maxStreak);
     if (favoriteRef.current) favoriteRef.current.textContent = String(fav);
 
+    if (ltRollsRef.current)
+      ltRollsRef.current.textContent = String(lifetimeRollsRef.current);
+    if (ltCritsRef.current)
+      ltCritsRef.current.textContent = String(lifetimeCritsRef.current);
+    if (ltFumblesRef.current)
+      ltFumblesRef.current.textContent = String(lifetimeFumblesRef.current);
+
     for (let i = 0; i < 20; i++) {
       const el = barRefs.current[i];
       if (!el) continue;
@@ -564,6 +607,13 @@ export default function Dice3DCanvas() {
   useEffect(() => {
     if (statsVisible) updateStats();
   }, [statsVisible, updateStats]);
+
+  // Load lifetime totals once on mount (client-only). Missing keys read as 0.
+  useEffect(() => {
+    lifetimeRollsRef.current = readStoredCount(LS_ROLLS);
+    lifetimeCritsRef.current = readStoredCount(LS_NAT20);
+    lifetimeFumblesRef.current = readStoredCount(LS_NAT1);
+  }, []);
 
   // Pick from a pool, avoiding an immediate repeat of the last shown line.
   const pickFromPool = useCallback((pool: string[]) => {
@@ -608,6 +658,17 @@ export default function Dice3DCanvas() {
   const handleRollLanded = useCallback(
     (num: number) => {
       rollsRef.current.push(num);
+
+      // Lifetime totals — increment and persist on every roll.
+      lifetimeRollsRef.current += 1;
+      writeStoredCount(LS_ROLLS, lifetimeRollsRef.current);
+      if (num === 20) {
+        lifetimeCritsRef.current += 1;
+        writeStoredCount(LS_NAT20, lifetimeCritsRef.current);
+      } else if (num === 1) {
+        lifetimeFumblesRef.current += 1;
+        writeStoredCount(LS_NAT1, lifetimeFumblesRef.current);
+      }
 
       // D Twenty reacts. Nat 20 / nat 1 always speak and override milestones;
       // milestones fire once at their roll number; from roll 25 a random quip
@@ -912,6 +973,54 @@ export default function Dice3DCanvas() {
               />
             ))}
           </div>
+
+          <div
+            aria-hidden="true"
+            style={{
+              height: "1px",
+              background: "rgba(45, 42, 38, 0.1)",
+              margin: "1.25rem 0 1rem",
+            }}
+          />
+
+          <div
+            style={{
+              fontSize: "0.6rem",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              opacity: 0.4,
+              marginBottom: "0.75rem",
+            }}
+          >
+            Lifetime
+          </div>
+
+          {(
+            [
+              ["all-time rolls", ltRollsRef],
+              ["all-time crits", ltCritsRef],
+              ["all-time fumbles", ltFumblesRef],
+            ] as const
+          ).map(([label, valueRef]) => (
+            <div
+              key={label}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: "6px",
+                opacity: 0.5,
+              }}
+            >
+              <span style={{ fontSize: "0.7rem", opacity: 0.55 }}>{label}</span>
+              <span
+                ref={valueRef}
+                style={{ fontSize: "0.85rem", fontWeight: 600 }}
+              >
+                0
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

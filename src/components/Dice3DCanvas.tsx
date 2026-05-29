@@ -823,7 +823,8 @@ export default function Dice3DCanvas() {
             ref={resultRef}
             style={{
               fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-              fontSize: "2.5rem",
+              fontSize: "3.25rem",
+              fontWeight: 700,
               color: INK_COLOR,
               opacity: 0,
               display: "inline-block",

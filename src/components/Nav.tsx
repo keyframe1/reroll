@@ -38,12 +38,12 @@ export default function Nav() {
       <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between gap-4">
         <a href="#" className="inline-flex items-center" aria-label="Reroll Gaming">
           <Image
-            src="/header.png"
+            src="/header2.png"
             alt="Reroll Gaming"
-            width={964}
-            height={270}
+            width={1474}
+            height={324}
             priority
-            className="h-12 sm:h-[72px] w-auto"
+            className="h-10 sm:h-[64px] w-auto"
             style={{ mixBlendMode: "multiply" }}
           />
         </a>

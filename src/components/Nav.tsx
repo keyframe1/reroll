@@ -1,7 +1,4 @@
-"use client";
-
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 const navLinks = [
   { label: "Events", href: "#events" },
@@ -10,31 +7,8 @@ const navLinks = [
 ];
 
 export default function Nav() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setScrolled(window.scrollY > 60);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
-        scrolled
-          ? "bg-[#C8C8C8]/85 backdrop-blur-[12px] border-ink/10"
-          : "bg-transparent backdrop-blur-0 border-transparent"
-      }`}
-    >
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-ink/10 bg-[#C8C8C8]/85 backdrop-blur-[12px]">
       <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between gap-4">
         <a href="#" className="inline-flex items-center" aria-label="Reroll Gaming">
           <Image

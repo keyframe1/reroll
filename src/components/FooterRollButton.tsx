@@ -14,7 +14,7 @@ export default function FooterRollButton() {
       type="button"
       aria-label="Scroll to top and roll the dice"
       onClick={handleClick}
-      className="group inline-flex items-center justify-center cursor-pointer my-8"
+      className="group inline-flex items-center justify-center cursor-pointer"
     >
       <Image
         src="/dice.png"
@@ -25,7 +25,7 @@ export default function FooterRollButton() {
         className="transition-transform duration-[800ms] ease-out group-hover:rotate-[360deg]"
         style={{
           width: "auto",
-          height: "56px",
+          height: "48px",
           mixBlendMode: "multiply",
         }}
       />
